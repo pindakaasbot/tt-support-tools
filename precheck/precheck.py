@@ -155,7 +155,7 @@ end
         logging.info("Patching DRC deck with SRAM region exclusion")
         content = content.replace(marker, sram_exclusion + marker)
         drc_script = os.path.join(
-            tempfile.gettempdir(), "ihp-sg13g2-sram-patched.drc"
+            os.path.dirname(drc_script), "ihp-sg13g2-sram-patched.drc"
         )
         with open(drc_script, "w") as f:
             f.write(content)
