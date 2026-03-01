@@ -129,9 +129,10 @@ def klayout_sg13g2(gds: str):
 if sram_drw.count > 0
   logger.info("SRAM region detected. Excluding from DRC checks.")
 
-  # Grow exclusion region by 1nm to eliminate thin slivers at the SRAM boundary
+  # Grow exclusion region slightly to eliminate thin slivers at the SRAM boundary
   # that would otherwise cause minimum-width violations from boolean clipping.
-  sram_excl = sram_drw.sized(0.001.um)
+  # 100nm is half the minimum metal width, ensuring no sub-minimum fragments remain.
+  sram_excl = sram_drw.sized(0.1.um)
 
   # FEOL base layers
   activ_drw       = activ_drw.not(sram_excl)
