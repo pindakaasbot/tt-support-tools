@@ -112,10 +112,58 @@ def klayout_zero_area(gds: str):
 
 
 def klayout_sg13g2(gds: str):
+    drc_script = f"{PDK_ROOT}/{PDK_NAME}/libs.tech/klayout/tech/drc/ihp-sg13g2.drc"
+
+    # Patch DRC deck to exclude SRAM macro regions (GDS layer 25/0).
+    # SRAM macros contain foundry-validated custom geometry that does not
+    # conform to standard DRC rules. The legacy sg13g2_maximal deck excluded
+    # these via _Nsram derived layers; the new modular deck does not.
+    sram_exclusion = """
+#================================================
+#---------- SRAM REGION EXCLUSION ---------------
+#================================================
+
+# SRAM macros (GDS layer 25/0) contain foundry-validated custom geometry
+# that does not conform to standard DRC rules.
+if sram_drw.count > 0
+  logger.info("SRAM region detected (\#{sram_drw.count} polygons). Excluding from DRC checks.")
+  activ_drw       = activ_drw.not(sram_drw)
+  gatpoly_drw     = gatpoly_drw.not(sram_drw)
+  psd_drw         = psd_drw.not(sram_drw)
+  nsd_drw         = nsd_drw.not(sram_drw)
+  nsd_block       = nsd_block.not(sram_drw)
+  cont_drw        = cont_drw.not(sram_drw)
+  nwell_drw       = nwell_drw.not(sram_drw)
+  pwell_block     = pwell_block.not(sram_drw)
+  metal1_drw      = metal1_drw.not(sram_drw)
+  metal2_drw      = metal2_drw.not(sram_drw)
+  metal3_drw      = metal3_drw.not(sram_drw)
+  metal4_drw      = metal4_drw.not(sram_drw)
+  metal5_drw      = metal5_drw.not(sram_drw)
+  via1_drw        = via1_drw.not(sram_drw)
+  via2_drw        = via2_drw.not(sram_drw)
+  via3_drw        = via3_drw.not(sram_drw)
+  via4_drw        = via4_drw.not(sram_drw)
+end
+
+"""
+    with open(drc_script, "r") as f:
+        content = f.read()
+
+    marker = "#================================================\n# -------------------- UTILS --------------------"
+    if "sram_drw.not(sram_drw)" not in content and marker in content:
+        logging.info("Patching DRC deck with SRAM region exclusion")
+        content = content.replace(marker, sram_exclusion + marker)
+        drc_script = os.path.join(
+            tempfile.gettempdir(), "ihp-sg13g2-sram-patched.drc"
+        )
+        with open(drc_script, "w") as f:
+            f.write(content)
+
     return klayout_drc(
         gds,
         "sg13g2",
-        f"{PDK_ROOT}/{PDK_NAME}/libs.tech/klayout/tech/drc/ihp-sg13g2.drc",
+        drc_script,
     )
 
 
