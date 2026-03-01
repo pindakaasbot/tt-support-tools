@@ -124,9 +124,12 @@ def klayout_sg13g2(gds: str):
 #================================================
 
 # SRAM macros (GDS layer 25/0) contain foundry-validated custom geometry
-# that does not conform to standard DRC rules.
+# that does not conform to standard DRC rules. Subtract the SRAM bounding
+# region from all physical layers so derived layers inherit the exclusion.
 if sram_drw.count > 0
-  logger.info("SRAM region detected (\#{sram_drw.count} polygons). Excluding from DRC checks.")
+  logger.info("SRAM region detected. Excluding from DRC checks.")
+
+  # FEOL base layers
   activ_drw       = activ_drw.not(sram_drw)
   gatpoly_drw     = gatpoly_drw.not(sram_drw)
   psd_drw         = psd_drw.not(sram_drw)
@@ -134,7 +137,12 @@ if sram_drw.count > 0
   nsd_block       = nsd_block.not(sram_drw)
   cont_drw        = cont_drw.not(sram_drw)
   nwell_drw       = nwell_drw.not(sram_drw)
+  nbulay_drw      = nbulay_drw.not(sram_drw)
   pwell_block     = pwell_block.not(sram_drw)
+  salblock_drw    = salblock_drw.not(sram_drw)
+  thickgateox_drw = thickgateox_drw.not(sram_drw)
+
+  # BEOL drawing layers
   metal1_drw      = metal1_drw.not(sram_drw)
   metal2_drw      = metal2_drw.not(sram_drw)
   metal3_drw      = metal3_drw.not(sram_drw)
@@ -144,6 +152,15 @@ if sram_drw.count > 0
   via2_drw        = via2_drw.not(sram_drw)
   via3_drw        = via3_drw.not(sram_drw)
   via4_drw        = via4_drw.not(sram_drw)
+
+  # Pin layers (prevent orphaned pin-without-drawing violations)
+  activ_pin       = activ_pin.not(sram_drw)
+  gatpoly_pin     = gatpoly_pin.not(sram_drw)
+  metal1_pin      = metal1_pin.not(sram_drw)
+  metal2_pin      = metal2_pin.not(sram_drw)
+  metal3_pin      = metal3_pin.not(sram_drw)
+  metal4_pin      = metal4_pin.not(sram_drw)
+  metal5_pin      = metal5_pin.not(sram_drw)
 end
 
 """
@@ -164,6 +181,7 @@ end
         gds,
         "sg13g2",
         drc_script,
+        extra_vars={"precheck_drc": "true"},
     )
 
 
